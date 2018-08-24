@@ -8,6 +8,7 @@ notation `ε` := @bwd.emp _
 infixl `≪`:5 := @bwd.snoc _
 notation `⟪` l:(foldl `, ` (h t, (t ≪ h)) ε `⟫`) := l
 
+@[simp]
 def append {α} : bwd α → list α → bwd α
 | xs [] := xs
 | xs (y :: ys) := append (xs ≪ y) ys
@@ -25,8 +26,6 @@ def arity (sort : Type) := bwd (valence sort) × sort
 
 def sig (sort : Type) :=
 fam (arity sort)
-
-infixl `▶`:2 := (λ x y, (x, y))
 
 
 /-- Thinnings -/
@@ -61,6 +60,8 @@ theorem seq_left_idn {α} : Π {Γ Δ : bwd α} (th : Δ ⇾ Γ), seq (idn _) th
     rewrite (seq_left_idn ξ)
   end
 
+
+
 section
   variable sort : Type
   variable 𝔖 : sig sort
@@ -75,3 +76,26 @@ section
   | snoc {Γ 𝔛 Δ τ} : msb Γ 𝔛 → cn (Γ ⋉ Δ) τ → msb Γ (𝔛 ≪ (Δ, τ))
 
 end
+
+
+
+namespace lambda_calculus
+  def sort := unit
+  notation `⋆` := ()
+  infixl `▶`:3 := prod.mk
+
+  inductive LAM : arity sort → Type
+  | lam : LAM (⟪[⋆] ▶ ⋆⟫ ▶ ⋆)
+  | app : LAM (⟪[] ▶ ⋆, [] ▶ ⋆⟫ ▶ ⋆)
+
+  notation `ƛ` t := cn.app LAM.lam (msb.snoc (msb.emp _) t)
+  notation `#` ξ := cn.var _ ξ
+
+  def tm (Γ : bwd sort) := cn _ LAM Γ ⋆
+
+  -- identity function
+  example : tm ⟪⟫ :=
+    ƛ (# thn.cong thn.emp)
+
+
+end lambda_calculus
