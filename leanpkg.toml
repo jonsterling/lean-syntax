@@ -1,0 +1,8 @@
+[package]
+name = "lean-syntax"
+version = "0.1"
+lean_version = "3.4.1"
+path = "src"
+
+[dependencies]
+mathlib = {git = "https://github.com/leanprover/mathlib", rev = "58cfe9f84feae93ed9b894754e60e2a3d049a251"}
