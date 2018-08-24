@@ -71,10 +71,9 @@ section
   | var {Γ τ} : Γ ⇾ ⟪τ⟫ → cn Γ τ
   | app {Γ 𝔛 τ} : 𝔖 (𝔛, τ) → msb Γ 𝔛 → cn Γ τ
   with msb : bwd sort → bwd (valence sort) → Type
-  | emp {Γ} :msb Γ ⟪⟫
+  | emp {Γ} : msb Γ ⟪⟫
   | snoc {Γ 𝔛 Δ τ} : msb Γ 𝔛 → cn (Γ ⋉ Δ) τ → msb Γ (𝔛 ≪ (Δ, τ))
 end
-
 
 
 namespace lambda_calculus
@@ -84,7 +83,6 @@ namespace lambda_calculus
 
   open sort
 
-  notation `⋆` := ()
   infixl `▶`:3 := prod.mk
 
   inductive LAM : arity sort → Type
@@ -92,9 +90,12 @@ namespace lambda_calculus
   | app : LAM (⟪[] ▶ syn, [] ▶ chk⟫ ▶ syn)
   | up : LAM (⟪[] ▶ syn⟫ ▶ chk)
 
-  notation `ƛ` t := cn.app LAM.lam (msb.snoc (msb.emp _) t)
+  infix `∙`:5 := cn.app
+  notation `⦃` l:(foldl `, ` (h t, (msb.snoc t h)) (msb.emp _) `⦄`) := l
+
+  notation `ƛ` t := LAM.lam ∙ ⦃ t ⦄
   notation `#` ξ := cn.var _ ξ
-  notation `⇑` t := cn.app LAM.up (msb.snoc (msb.emp _) t)
+  notation `⇑` t := LAM.up ∙ ⦃ t ⦄
   notation `x₀` := thn.cong thn.emp
 
   def tm (Γ : bwd sort) := cn _ LAM Γ chk
