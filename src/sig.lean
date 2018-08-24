@@ -47,7 +47,7 @@ def seq {α} : Π {Γ Δ Ξ : bwd α}, Γ ⇾ Δ → Δ ⇾ Ξ → Γ ⇾ Ξ
 | _ _ _ (thn.cong δ) (thn.drop ξ) := thn.drop (seq δ ξ)
 | _ _ _ (thn.drop δ) ξ := thn.drop (seq δ ξ)
 
-theorem seq_left_idn {α} : Π {Γ Δ : bwd α} (th : Δ ⇾ Γ), seq (idn _) th = th
+theorem seq_left_idn {α} : Π {Γ Δ : bwd α} (γ : Δ ⇾ Γ), seq (idn _) γ = γ
 | _ _ thn.emp := by refl
 | _ _ (thn.cong ξ) :=
   begin
@@ -59,7 +59,6 @@ theorem seq_left_idn {α} : Π {Γ Δ : bwd α} (th : Δ ⇾ Γ), seq (idn _) th
     unfold idn seq,
     rewrite (seq_left_idn ξ)
   end
-
 
 
 section
@@ -74,28 +73,34 @@ section
   with msb : bwd sort → bwd (valence sort) → Type
   | emp {Γ} :msb Γ ⟪⟫
   | snoc {Γ 𝔛 Δ τ} : msb Γ 𝔛 → cn (Γ ⋉ Δ) τ → msb Γ (𝔛 ≪ (Δ, τ))
-
 end
 
 
 
 namespace lambda_calculus
-  def sort := unit
+  inductive sort : Type
+  | chk
+  | syn
+
+  open sort
+
   notation `⋆` := ()
   infixl `▶`:3 := prod.mk
 
   inductive LAM : arity sort → Type
-  | lam : LAM (⟪[⋆] ▶ ⋆⟫ ▶ ⋆)
-  | app : LAM (⟪[] ▶ ⋆, [] ▶ ⋆⟫ ▶ ⋆)
+  | lam : LAM (⟪[syn] ▶ chk⟫ ▶ chk)
+  | app : LAM (⟪[] ▶ syn, [] ▶ chk⟫ ▶ syn)
+  | up : LAM (⟪[] ▶ syn⟫ ▶ chk)
 
   notation `ƛ` t := cn.app LAM.lam (msb.snoc (msb.emp _) t)
   notation `#` ξ := cn.var _ ξ
+  notation `⇑` t := cn.app LAM.up (msb.snoc (msb.emp _) t)
+  notation `x₀` := thn.cong thn.emp
 
-  def tm (Γ : bwd sort) := cn _ LAM Γ ⋆
+  def tm (Γ : bwd sort) := cn _ LAM Γ chk
 
   -- identity function
   example : tm ⟪⟫ :=
-    ƛ (# thn.cong thn.emp)
-
+    ƛ ⇑ # x₀
 
 end lambda_calculus
