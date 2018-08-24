@@ -48,21 +48,18 @@ def seq {α} : Π {Γ Δ Ξ : bwd α}, Γ ⇾ Δ → Δ ⇾ Ξ → Γ ⇾ Ξ
 | _ _ _ (thn.cong δ) (thn.drop ξ) := thn.drop (seq δ ξ)
 | _ _ _ (thn.drop δ) ξ := thn.drop (seq δ ξ)
 
-
-theorem seq_left_idn {α} {Γ Δ : bwd α} (th : Δ ⇾ Γ) : seq (idn _) th = th :=
-begin
-  induction th,
-  case thn.emp { refl },
-  case thn.cong {
+theorem seq_left_idn {α} : Π {Γ Δ : bwd α} (th : Δ ⇾ Γ), seq (idn _) th = th
+| _ _ thn.emp := by refl
+| _ _ (thn.cong ξ) :=
+  begin
     unfold idn seq,
-    rewrite th_ih,
-  },
-  case thn.drop {
+    rewrite (seq_left_idn ξ)
+  end
+| _ _ (thn.drop ξ) :=
+  begin
     unfold idn seq,
-    rewrite th_ih
-  }
-end
-
+    rewrite (seq_left_idn ξ)
+  end
 
 section
   variable sort : Type
