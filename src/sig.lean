@@ -38,21 +38,35 @@ inductive thn {sort} : bwd sort → bwd sort → Type
 infixr `⇾`:30 := @thn _
 infixl `≤` := @thn _
 
-/- here's something the pattern compiler chokes on. -/
-def idn {sort} : Π (Γ : bwd sort), Γ ⇾ Γ :=
+def idn {α} : Π (Γ : bwd α), Γ ⇾ Γ
+| bwd.emp := thn.emp
+| (bwd.snoc Γ _) := thn.cong (idn Γ)
+
+def seq {α} : Π {Γ Δ Ξ : bwd α}, Γ ⇾ Δ → Δ ⇾ Ξ → Γ ⇾ Ξ
+| _ _ _ thn.emp thn.emp := thn.emp
+| _ _ _ (thn.cong δ) (thn.cong ξ) := thn.cong (seq δ ξ)
+| _ _ _ (thn.cong δ) (thn.drop ξ) := thn.drop (seq δ ξ)
+| _ _ _ (thn.drop δ) ξ := thn.drop (seq δ ξ)
+
+
+theorem seq_left_idn {α} {Γ Δ : bwd α} (th : Δ ⇾ Γ) : seq (idn _) th = th :=
 begin
-  intro Γ,
-  induction Γ with _ _ ih,
-  apply thn.emp,
-  apply thn.cong,
-  exact ih
+  induction th,
+  case thn.emp { refl },
+  case thn.cong {
+    unfold idn seq,
+    rewrite th_ih,
+  },
+  case thn.drop {
+    unfold idn seq,
+    rewrite th_ih
+  }
 end
+
 
 section
   variable sort : Type
   variable 𝔖 : sig sort
-
-
 
   /-- the clone (type of terms) and type of metasubstitutions -/
   mutual inductive cn, msb
