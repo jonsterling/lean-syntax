@@ -20,16 +20,9 @@ infixl `⋉`:3 := append
 def fam (α : Type) := α → Type
 
 
-def valence (sort : Type) := list sort × sort
-def arity (sort : Type) := bwd (valence sort) × sort
-
-
-def sig (sort : Type) :=
-fam (arity sort)
-
 
 /-- Thinnings -/
-inductive thn {sort} : bwd sort → bwd sort → Type
+inductive thn {α} : bwd α → bwd α → Type
 | emp {} : thn ⟪⟫ ⟪⟫
 | cong {Γ Δ τ} : thn Γ Δ → thn (Γ ≪ τ) (Δ ≪ τ)
 | drop {Γ Δ τ} : thn Γ Δ → thn (Γ ≪ τ) Δ
@@ -61,19 +54,23 @@ theorem seq_left_idn {α} : Π {Γ Δ : bwd α} (γ : Δ ⇾ Γ), seq (idn _) γ
   end
 
 
-section
-  variable sort : Type
-  variable 𝔖 : sig sort
 
-  /-- the clone (type of terms) and type of metasubstitutions -/
-  mutual inductive cn, msb
-  with cn : bwd sort → sort → Type
-  | var {Γ τ} : Γ ⇾ ⟪τ⟫ → cn Γ τ
-  | app {Γ 𝔛 τ} : 𝔖 (𝔛, τ) → msb Γ 𝔛 → cn Γ τ
-  with msb : bwd sort → bwd (valence sort) → Type
-  | emp {Γ} : msb Γ ⟪⟫
-  | snoc {Γ 𝔛 Δ τ} : msb Γ 𝔛 → cn (Γ ⋉ Δ) τ → msb Γ (𝔛 ≪ (Δ, τ))
-end
+inductive arity (α : Type) : Type
+| mk : list arity → α → arity
+
+def sig (α : Type) := fam (arity α)
+infixl `▶`:3 := arity.mk
+
+
+
+/-- the clone (type of terms) and type of substitutions -/
+mutual inductive cn, sb {α} (𝔖 : sig α)
+with cn : bwd (arity α) → α → Type
+| opr {Γ Δ τ} : 𝔖 (Δ ▶ τ) → sb Γ Δ → cn Γ τ
+| var {Γ Δ τ} : Γ ⇾ ⟪ Δ ▶ τ ⟫ → sb Γ Δ → cn Γ τ
+with sb : bwd (arity α) → list (arity α) → Type
+| nil {Γ} : sb Γ []
+| cons {Γ Ξ Δ τ} : cn (Γ ⋉ Δ) τ → sb Γ Ξ → sb Γ ((Δ ▶ τ) :: Ξ)
 
 
 namespace lambda_calculus
@@ -83,25 +80,26 @@ namespace lambda_calculus
 
   open sort
 
-  infixl `▶`:3 := prod.mk
-
   inductive LAM : arity sort → Type
-  | lam : LAM (⟪[syn] ▶ chk⟫ ▶ chk)
-  | app : LAM (⟪[] ▶ syn, [] ▶ chk⟫ ▶ syn)
-  | up : LAM (⟪[] ▶ syn⟫ ▶ chk)
+  | lam : LAM ([[[] ▶ syn] ▶ chk] ▶ chk)
+  | app : LAM ([[] ▶ syn, [] ▶ chk] ▶ syn)
+  | up : LAM ([[] ▶ syn] ▶ chk)
 
-  infix `∙`:5 := cn.app
-  notation `⦃` l:(foldl `, ` (h t, (msb.snoc t h)) (msb.emp _) `⦄`) := l
+  infix `∙`:5 := cn.opr
+
+  notation `⦃` l:(foldr `, ` (h t, (sb.cons h t)) (sb.nil _) `⦄`) := l
 
   notation `ƛ` t := LAM.lam ∙ ⦃ t ⦄
-  notation `#` ξ := cn.var _ ξ
+
+  notation ξ `#` γ := cn.var ξ γ
   notation `⇑` t := LAM.up ∙ ⦃ t ⦄
   notation `x₀` := thn.cong thn.emp
 
-  def tm (Γ : bwd sort) := cn _ LAM Γ chk
+  def tm (Γ : bwd (arity sort)) := cn LAM Γ chk
+
 
   -- identity function
-  example : tm ⟪⟫ :=
-    ƛ ⇑ # x₀
+  def foo : _ :=
+    ƛ ⇑ (x₀ # ⦃⦄)
 
 end lambda_calculus
